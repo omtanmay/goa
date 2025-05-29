@@ -1,5 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
+import { useEffect, useRef, useState } from "react";
 
 const timelineData = [
   {
@@ -99,83 +100,151 @@ const timelineData = [
   }
 ];
 
+const useScrollAnimation = () => {
+  const [visibleElements, setVisibleElements] = useState<Set<number>>(new Set());
+  
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          const index = parseInt(entry.target.getAttribute('data-index') || '0');
+          if (entry.isIntersecting) {
+            setVisibleElements(prev => new Set([...prev, index]));
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '50px' }
+    );
+
+    const elements = document.querySelectorAll('[data-scroll-animate]');
+    elements.forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
+
+  return visibleElements;
+};
+
 export const TimelineSection = () => {
+  const visibleElements = useScrollAnimation();
+
   return (
-    <section id="timeline" className="py-20 px-6">
-      <div className="container mx-auto max-w-6xl">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-            The Chaotic Journey Unfolds 📖
+    <section id="timeline" className="py-20 px-6 relative overflow-hidden">
+      {/* Animated background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.1"%3E%3Ccircle cx="30" cy="30" r="1"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20"></div>
+      </div>
+      
+      <div className="container mx-auto max-w-6xl relative z-10">
+        <div className="text-center mb-20">
+          <h2 className="text-5xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-blue-400 via-purple-400 to-teal-400 bg-clip-text text-transparent leading-tight">
+            The Journey Unfolds
           </h2>
-          <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-            From random school group messages to ₹69 crore funding dreams. Here's how it all went down, unfiltered and chaotic! 😭
+          <div className="w-32 h-1 bg-gradient-to-r from-blue-500 to-purple-500 mx-auto mb-8"></div>
+          <p className="text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed">
+            From random school group messages to ₹69 crore funding dreams. Here's how it all went down, 
+            <span className="text-transparent bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text font-semibold"> unfiltered and chaotic!</span>
           </p>
         </div>
 
-        <div className="space-y-12">
+        {/* Timeline line */}
+        <div className="absolute left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-teal-500 opacity-30 h-full hidden lg:block"></div>
+
+        <div className="space-y-20">
           {timelineData.map((day, index) => (
-            <Card 
-              key={day.day} 
-              className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all duration-300 hover:scale-[1.02] animate-fade-in"
-              style={{ animationDelay: `${index * 200}ms` }}
+            <div
+              key={day.day}
+              data-scroll-animate
+              data-index={index}
+              className={`transition-all duration-1000 transform ${
+                visibleElements.has(index) 
+                  ? 'opacity-100 translate-y-0' 
+                  : 'opacity-0 translate-y-20'
+              }`}
+              style={{ transitionDelay: `${index * 200}ms` }}
             >
-              <CardContent className="p-8">
-                <div className="flex flex-col gap-6">
-                  {/* Day Header */}
-                  <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-                    <div className={`bg-gradient-to-r ${day.color} text-white px-6 py-3 rounded-full font-bold text-lg min-w-fit`}>
-                      {day.day}
-                    </div>
-                    
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-3xl">{day.emoji}</span>
-                        <h3 className="text-2xl md:text-3xl font-bold text-white">
-                          {day.title}
-                        </h3>
+              <Card className={`relative bg-gradient-to-br from-gray-800/80 to-gray-900/80 border-gray-700/50 backdrop-blur-sm hover:border-gray-600/50 transition-all duration-500 hover:shadow-2xl hover:shadow-purple-500/10 group ${
+                index % 2 === 0 ? 'lg:mr-20' : 'lg:ml-20'
+              }`}>
+                {/* Timeline dot */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 -translate-y-1/2 top-8 w-6 h-6 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full border-4 border-gray-900 z-10 hidden lg:block group-hover:scale-125 transition-transform duration-300"></div>
+                
+                <CardContent className="p-8 md:p-12">
+                  <div className="flex flex-col gap-8">
+                    {/* Day Header */}
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                      <div className={`bg-gradient-to-r ${day.color} text-white px-8 py-4 rounded-2xl font-bold text-xl shadow-lg transform hover:scale-105 transition-transform duration-300`}>
+                        {day.day}
+                      </div>
+                      
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-6">
+                          <span className="text-5xl animate-bounce">{day.emoji}</span>
+                          <h3 className="text-3xl md:text-4xl font-bold text-white leading-tight">
+                            {day.title}
+                          </h3>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Summary */}
-                  <p className="text-gray-300 text-lg mb-6 leading-relaxed">
-                    {day.summary}
-                  </p>
-                  
-                  {/* Detailed Story */}
-                  <div className="bg-gray-900/50 rounded-lg p-6 mb-6">
-                    <div className="text-gray-300 leading-relaxed space-y-4">
-                      {day.details.split('\n\n').map((paragraph, paragraphIndex) => (
-                        <p key={paragraphIndex} className="text-sm md:text-base">
-                          {paragraph.trim()}
-                        </p>
-                      ))}
+                    
+                    {/* Summary */}
+                    <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-500/20">
+                      <p className="text-gray-200 text-lg md:text-xl leading-relaxed font-medium">
+                        {day.summary}
+                      </p>
                     </div>
+                    
+                    {/* Detailed Story */}
+                    <div className="bg-gray-900/60 rounded-2xl p-8 border border-gray-700/50 backdrop-blur-sm">
+                      <div className="text-gray-300 leading-relaxed space-y-6">
+                        {day.details.split('\n\n').map((paragraph, paragraphIndex) => (
+                          <p key={paragraphIndex} className="text-base md:text-lg leading-loose">
+                            {paragraph.trim()}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Quote */}
+                    <blockquote className="relative border-l-4 border-gradient-to-b from-blue-500 to-purple-500 pl-8 py-6 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-r-2xl">
+                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+                      <p className="italic text-blue-300 text-xl md:text-2xl font-medium leading-relaxed">
+                        "{day.quote}"
+                      </p>
+                    </blockquote>
                   </div>
-                  
-                  {/* Quote */}
-                  <blockquote className="border-l-4 border-blue-500 pl-6 py-4 bg-blue-500/10 rounded-r-lg">
-                    <p className="italic text-blue-300 text-lg font-medium">"{day.quote}"</p>
-                  </blockquote>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           ))}
         </div>
 
         {/* Final Reflection */}
-        <Card className="mt-16 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border-purple-500/30">
-          <CardContent className="p-12 text-center">
-            <h3 className="text-3xl font-bold text-white mb-6">The Real Plot Twist 🎭</h3>
-            <p className="text-xl text-gray-300 leading-relaxed mb-6">
-              Started with: Random school group message<br/>
-              Ended with: Snake warnings, rasgulla patents, ₹69 crore dreams, chrome white obsession, and lifelong memories
-            </p>
-            <p className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">
-              Character development level: MAXIMUM 🗿✨
-            </p>
-          </CardContent>
-        </Card>
+        <div
+          data-scroll-animate
+          data-index={timelineData.length}
+          className={`mt-24 transition-all duration-1000 transform ${
+            visibleElements.has(timelineData.length) 
+              ? 'opacity-100 translate-y-0' 
+              : 'opacity-0 translate-y-20'
+          }`}
+        >
+          <Card className="bg-gradient-to-br from-purple-900/80 via-blue-900/80 to-teal-900/80 border-purple-500/30 backdrop-blur-sm shadow-2xl shadow-purple-500/20">
+            <CardContent className="p-12 md:p-16 text-center">
+              <h3 className="text-4xl md:text-5xl font-bold text-white mb-8 leading-tight">
+                The Real Plot Twist 🎭
+              </h3>
+              <div className="w-24 h-1 bg-gradient-to-r from-yellow-400 to-orange-400 mx-auto mb-8"></div>
+              <p className="text-xl md:text-2xl text-gray-200 leading-relaxed mb-8 max-w-4xl mx-auto">
+                Started with: Random school group message<br/>
+                <span className="text-yellow-400 font-semibold">Ended with:</span> Snake warnings, rasgulla patents, ₹69 crore dreams, chrome white obsession, and lifelong memories
+              </p>
+              <p className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 bg-clip-text text-transparent leading-tight">
+                Character development level: MAXIMUM 🗿✨
+              </p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </section>
   );
